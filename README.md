@@ -12,6 +12,7 @@ All results are logged in the Interactsh tab once the extension is loaded. Verbo
 1. `mvn package`
 2. Add the target/collaborator-1.0.0-dev-jar-with-dependencies.jar file as a new Java extension in Burpsuite
 
+Alternatively you can download the precompiled library from the [latest releast](https://github.com/wdahlenburg/interactsh-collaborator/releases/latest)
 
 ### Usage
 
