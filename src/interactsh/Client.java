@@ -45,6 +45,7 @@ public class Client {
                     + "Host: " + host + "\r\n"
                     + "User-Agent: Interact.sh Client\r\n"
                     + "Content-Type: application/json\r\n"
+                    + "Content-Length: " + registerData.toString().length() + "\r\n"
                     + "Connection: close\r\n\r\n"
                     + registerData.toString();
 
@@ -60,7 +61,7 @@ public class Client {
     }
 
     public boolean poll() throws IOException, InterruptedException {
-        String request = "GET /poll?id=" + correlationId + "&secret=" + secretKey + "\r\n"
+        String request = "GET /poll?id=" + correlationId + "&secret=" + secretKey + " HTTP/1.1\r\n"
                 + "Host: " + host + "\r\n"
                 + "User-Agent: Interact.sh Client\r\n"
                 + "Connection: close\r\n\r\n";
@@ -99,15 +100,16 @@ public class Client {
     public void deregister(){
         callbacks.printOutput("Deregistering " + correlationId);
         try {
-            JSONObject registerData = new JSONObject();
-            registerData.put("correlation-id", correlationId);
+            JSONObject deregisterData = new JSONObject();
+            deregisterData.put("correlation-id", correlationId);
 
             String request = "POST /deregister HTTP/1.1\r\n"
                     + "Host: " + host + "\r\n"
                     + "User-Agent: Interact.sh Client\r\n"
                     + "Content-Type: application/json\r\n"
+                    + "Content-Length: " + deregisterData.toString().length() + "\r\n"
                     + "Connection: close\r\n\r\n"
-                    + registerData.toString();
+                    + deregisterData.toString();
 
             callbacks.makeHttpRequest(host, port, scheme, request.getBytes(StandardCharsets.UTF_8));
         }catch (Exception ex){
@@ -116,7 +118,7 @@ public class Client {
     }
 
     public String getInteractDomain(){
-        if (correlationId.isEmpty()){
+        if (correlationId == null || correlationId.isEmpty()){
             return "";
         } else {
             String fullDomain = correlationId;
@@ -141,12 +143,12 @@ public class Client {
     }
 
     private String getPublicKey(){
-        String pubKey = "-----BEGIN RSA PUBLIC KEY-----\n";
+        String pubKey = "-----BEGIN PUBLIC KEY-----\n";
         String [] chunks = splitStringEveryN(Base64.getEncoder().encodeToString(publicKey.getEncoded()), 64);
         for (String chunk: chunks) {
             pubKey += chunk + "\n";
         }
-        pubKey += "-----END RSA PUBLIC KEY-----\n";
+        pubKey += "-----END PUBLIC KEY-----\n";
         return pubKey;
     }
 
