@@ -15,6 +15,7 @@ public class Config {
                 (port == null || port.isEmpty())){
             callbacks.saveExtensionSetting("interactsh-server", "interact.sh");
             callbacks.saveExtensionSetting("interactsh-port", "443");
+            callbacks.saveExtensionSetting("interactsh-uses-tls", Boolean.toString(true));
         }
     }
 

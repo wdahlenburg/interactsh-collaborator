@@ -154,6 +154,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
                 callbacks.customizeUiComponent(splitPane);
                 callbacks.customizeUiComponent(logTable);
                 callbacks.customizeUiComponent(scrollPane);
+                callbacks.customizeUiComponent(configPanel);
+                callbacks.customizeUiComponent(innerConfig);
                 callbacks.customizeUiComponent(CollaboratorButton);
 
                 // add the custom tab to Burp's UI
