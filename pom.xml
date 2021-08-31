@@ -5,7 +5,7 @@
 
     <groupId>interactsh</groupId>
     <artifactId>collaborator</artifactId>
-    <version>1.0.0-dev</version>
+    <version>1.0.1-dev</version>
     <packaging>jar</packaging>
 
     <dependencies>
