@@ -46,6 +46,37 @@ public class Config {
         callbacks.saveExtensionSetting("interactsh-uses-tls", Boolean.toString(tls));
         callbacks.saveExtensionSetting("interactsh-authorization", authorization);
     }
+
+    public static String getHost(){
+        return burp.BurpExtender.getCallbacks().loadExtensionSetting("interactsh-server");
+    }
+
+    public static String getPort(){
+        return burp.BurpExtender.getCallbacks().loadExtensionSetting("interactsh-port");
+    }
+
+    public static boolean getScheme(){
+        return Boolean.parseBoolean(burp.BurpExtender.getCallbacks().loadExtensionSetting("interactsh-uses-tls"));
+    }
+
+    public static String getAuth(){
+        return burp.BurpExtender.getCallbacks().loadExtensionSetting("interactsh-authorization");
+    }
+
+    public static String getUrl(){
+        String scheme = "https://";
+        if(Boolean.parseBoolean(burp.BurpExtender.getCallbacks().loadExtensionSetting("interactsh-server")) ==  false){
+            scheme = "http://";
+        }
+
+        String url = scheme + getHost();
+        String port = getPort();
+        if(!(port == "80" || port == "443")){
+            url += ":" + port;
+        }
+
+        return url;
+    }
 }
 
 
