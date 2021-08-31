@@ -22,12 +22,24 @@ public class Client {
     private String secretKey;
     private String correlationId;
 
+    // Defaults
     private String server = "https://interact.sh";
     private String host = "interact.sh";
     private int port = 443;
     private boolean scheme = true;
+    private String authorization = null;
 
-    public Client(){}
+    public Client(){
+        server = burp.gui.Config.getUrl();
+        host = burp.gui.Config.getHost();
+        scheme = burp.gui.Config.getScheme();
+        authorization = burp.gui.Config.getAuth();
+        try {
+            port = Integer.parseInt(burp.gui.Config.getPort());
+        } catch (NumberFormatException ne){
+            port = 443;
+        }
+    }
 
     public boolean registerClient() throws Exception {
         String pubKey = Base64.getEncoder().encodeToString(getPublicKey().getBytes(StandardCharsets.UTF_8));
@@ -45,8 +57,11 @@ public class Client {
                     + "Host: " + host + "\r\n"
                     + "User-Agent: Interact.sh Client\r\n"
                     + "Content-Type: application/json\r\n"
-                    + "Content-Length: " + registerData.toString().length() + "\r\n"
-                    + "Connection: close\r\n\r\n"
+                    + "Content-Length: " + registerData.toString().length() + "\r\n";
+            if(!(authorization == null || authorization.isEmpty())){
+                request += "Authorization: " + authorization + "\r\n";
+            }
+            request += "Connection: close\r\n\r\n"
                     + registerData.toString();
 
             byte[] response = callbacks.makeHttpRequest(host, port, scheme, request.getBytes(StandardCharsets.UTF_8));
@@ -63,8 +78,11 @@ public class Client {
     public boolean poll() throws IOException, InterruptedException {
         String request = "GET /poll?id=" + correlationId + "&secret=" + secretKey + " HTTP/1.1\r\n"
                 + "Host: " + host + "\r\n"
-                + "User-Agent: Interact.sh Client\r\n"
-                + "Connection: close\r\n\r\n";
+                + "User-Agent: Interact.sh Client\r\n";
+        if(!(authorization == null || authorization.isEmpty())){
+            request += "Authorization: " + authorization + "\r\n";
+        }
+        request += "Connection: close\r\n\r\n";
 
         byte[] response = callbacks.makeHttpRequest(host, port, scheme, request.getBytes(StandardCharsets.UTF_8));
         IResponseInfo responseInfo = BurpExtender.getHelpers().analyzeResponse(response);
@@ -107,8 +125,11 @@ public class Client {
                     + "Host: " + host + "\r\n"
                     + "User-Agent: Interact.sh Client\r\n"
                     + "Content-Type: application/json\r\n"
-                    + "Content-Length: " + deregisterData.toString().length() + "\r\n"
-                    + "Connection: close\r\n\r\n"
+                    + "Content-Length: " + deregisterData.toString().length() + "\r\n";
+            if(!(authorization == null || authorization.isEmpty())){
+                request += "Authorization: " + authorization + "\r\n";
+            }
+            request += "Connection: close\r\n\r\n"
                     + deregisterData.toString();
 
             callbacks.makeHttpRequest(host, port, scheme, request.getBytes(StandardCharsets.UTF_8));
@@ -128,7 +149,7 @@ public class Client {
             while (fullDomain.length() < 33) {
                 fullDomain += (char)(random.nextInt(26) + 'a');
             }
-            fullDomain += "." + server.split("/")[2]; // .interact.sh
+            fullDomain += "." + host;
             return fullDomain;
         }
     }

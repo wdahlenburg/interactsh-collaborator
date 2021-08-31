@@ -1,11 +1,14 @@
 package burp;
 
-import burp.gui.InteractshListener;
-import burp.gui.PollTimeListener;
+import burp.listeners.InteractshListener;
+import burp.listeners.PollTimeListener;
 import interactsh.Client;
 import interactsh.InteractEntry;
+import layout.SpringUtilities;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -19,12 +22,17 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
     private static IBurpExtenderCallbacks callbacks;
     private static IExtensionHelpers helpers;
 
+    private JTabbedPane mainPane;
     private JSplitPane splitPane;
     private JScrollPane scrollPane;
     private JSplitPane tableSplitPane;
     private JPanel resultsPanel;
     private static JTextField pollField;
     private static Table logTable;
+    public static JTextField serverText;
+    public static JTextField portText;
+    public static JTextField authText;
+    public static JCheckBox tlsBox;
     private static List<InteractEntry> log = new ArrayList<InteractEntry>();
     private static ArrayList<Client> clients = new ArrayList<Client>();
     private InteractshListener listener;
@@ -46,6 +54,9 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
         callbacks.setExtensionName("Interactsh Collaborator");
         callbacks.printOutput("Starting Interactsh Collaborator!");
 
+        // Save settings
+        burp.gui.Config.generateConfig();
+
         // Register this as a IExtensionStateListener
         callbacks.registerExtensionStateListener(BurpExtender.this);
 
@@ -58,7 +69,9 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
             @Override
             public void run()
             {
+                mainPane = new JTabbedPane();
                 splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+                mainPane.addTab("Logs", splitPane);
 
                 resultsPanel = new JPanel();
                 tableSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -82,12 +95,67 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
                 panel.add(pollField);
                 splitPane.setTopComponent(panel);
 
+                // Configuration pane
+                JPanel configPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+                mainPane.addTab("Configuration", configPanel);
+                JPanel innerConfig = new JPanel();
+                innerConfig.setSize(new Dimension(80, 150));
+                innerConfig.setLayout(new SpringLayout());
+                configPanel.add(innerConfig);
+
+                serverText = new JTextField("interact.sh", 20);
+                portText = new JTextField("443", 20);
+                authText = new JTextField("", 20);
+                tlsBox = new JCheckBox("", true);
+
+                JLabel server = new JLabel("Server: ");
+                innerConfig.add(server);
+                server.setLabelFor(serverText);
+                innerConfig.add(serverText);
+
+                JLabel port = new JLabel("Port: ");
+                innerConfig.add(port);
+                port.setLabelFor(portText);
+                innerConfig.add(portText);
+
+                JLabel auth = new JLabel("Authorization: ");
+                innerConfig.add(auth);
+                auth.setLabelFor(authText);
+                innerConfig.add(authText);
+
+                JLabel tls = new JLabel("TLS: ");
+                innerConfig.add(tls);
+                tls.setLabelFor(tlsBox);
+                innerConfig.add(tlsBox);
+
+                JButton updateConfigButton = new JButton("Update Settings");
+                updateConfigButton.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        burp.gui.Config.updateConfig();
+                    }
+                });
+                innerConfig.add(updateConfigButton);
+
+                // Add a blank panel so that SpringUtilities can make a well shaped grid
+                innerConfig.add(new JPanel());
+
+                SpringUtilities.makeCompactGrid(innerConfig,
+                        5, 2, //rows, cols
+                        6, 6,        //initX, initY
+                        6, 6);       //xPad, yPad
+
+                burp.gui.Config.loadConfig();
+
+
                 // customize our UI components
+                callbacks.customizeUiComponent(mainPane);
                 callbacks.customizeUiComponent(resultsPanel);
                 callbacks.customizeUiComponent(tableSplitPane);
                 callbacks.customizeUiComponent(splitPane);
                 callbacks.customizeUiComponent(logTable);
                 callbacks.customizeUiComponent(scrollPane);
+                callbacks.customizeUiComponent(configPanel);
+                callbacks.customizeUiComponent(innerConfig);
                 callbacks.customizeUiComponent(CollaboratorButton);
 
                 // add the custom tab to Burp's UI
@@ -159,7 +227,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
     @Override
     public Component getUiComponent()
     {
-        return splitPane;
+        return mainPane;
     }
 
     //
