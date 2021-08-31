@@ -1,4 +1,4 @@
-package burp.gui;
+package burp.listeners;
 
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;

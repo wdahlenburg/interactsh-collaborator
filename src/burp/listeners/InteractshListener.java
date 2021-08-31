@@ -1,6 +1,5 @@
-package burp.gui;
+package burp.listeners;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
