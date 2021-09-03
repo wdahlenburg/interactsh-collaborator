@@ -16,6 +16,9 @@ import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseAdapter;
+import javax.swing.table.DefaultTableModel;
 
 public class BurpExtender extends AbstractTableModel implements IBurpExtender, IContextMenuFactory, ITab, IExtensionStateListener
 {
@@ -215,6 +218,12 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
         logTable.revalidate();
     }
 
+    public static void clearTable(){
+        callbacks.printOutput("Clearing logs");
+        log.clear();
+        logTable.revalidate();
+    }
+
     //
     // implement ITab
     //
@@ -324,6 +333,18 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
             super(tableModel);
             this.setRowSorter(new TableRowSorter(tableModel));
             this.tableModel = tableModel;
+
+            this.addMouseListener(new MouseAdapter() {
+                public void mouseClicked(MouseEvent me) {
+                    if(SwingUtilities.isRightMouseButton(me) == true) {
+                        int result = JOptionPane.showConfirmDialog(null, "Clear logs?");
+
+                        if (result == 0){
+                            burp.BurpExtender.clearTable();
+                        }
+                    }
+                }
+            });
         }
 
         @Override
