@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import javax.swing.JOptionPane;
 
 import burp.BurpExtender;
 import interactsh.Client;
@@ -33,6 +34,7 @@ public class InteractshListener implements ActionListener {
                                   TimeUnit.SECONDS.sleep(burp.BurpExtender.pollTime);
                               }
                           } else {
+                              JOptionPane.showMessageDialog(null, "Error registering client\n\nCheck configuration and/or extension proxy logs");
                               BurpExtender.getCallbacks().printOutput("Error registering client");
                           }
                       } catch (Exception ex) {
