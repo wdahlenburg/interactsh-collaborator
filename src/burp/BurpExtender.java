@@ -284,6 +284,9 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
     @Override
     public Class<?> getColumnClass(int columnIndex)
     {
+        if (columnIndex == 0){
+            return Integer.class;
+        }
         return String.class;
     }
 
