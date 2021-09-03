@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 
 public class BurpExtender extends AbstractTableModel implements IBurpExtender, IContextMenuFactory, ITab, IExtensionStateListener
 {
@@ -85,7 +86,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
                 JPanel panel = new JPanel();
                 JButton CollaboratorButton = new JButton("Generate Interactsh url");
                 JLabel pollLabel = new JLabel("Poll Time: ");
-                pollField = new JTextField("60", 4);
+                pollField = new JTextField(Integer.toString(pollTime), 4);
                 pollField.getDocument().addDocumentListener(new PollTimeListener());
 
                 listener = new InteractshListener();
@@ -257,7 +258,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
     @Override
     public int getColumnCount()
     {
-        return 4;
+        return 5;
     }
 
     @Override
@@ -266,12 +267,14 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
         switch (columnIndex)
         {
             case 0:
-                return "Entry";
+                return "#";
             case 1:
-                return "Type";
+                return "Entry";
             case 2:
-                return "Address";
+                return "Type";
             case 3:
+                return "Address";
+            case 4:
                 return "Time";
             default:
                 return "";
@@ -292,12 +295,14 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
         switch (columnIndex)
         {
             case 0:
-                return ie.uid;
+                return rowIndex;
             case 1:
-                return ie.protocol;
+                return ie.uid;
             case 2:
-                return ie.address;
+                return ie.protocol;
             case 3:
+                return ie.address;
+            case 4:
                 return ie.timestamp;
             default:
                 return "";
@@ -314,6 +319,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
         public Table(TableModel tableModel)
         {
             super(tableModel);
+            this.setRowSorter(new TableRowSorter(tableModel));
             this.tableModel = tableModel;
         }
 
@@ -321,7 +327,11 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
         public void changeSelection(int row, int col, boolean toggle, boolean extend)
         {
             // show the log entry for the selected row
-            InteractEntry ie = log.get(row);
+
+            // Get row index
+            int logId = (Integer) this.getValueAt(row, 0);
+
+            InteractEntry ie = log.get(logId);
 
             resultsPanel.removeAll(); // Refresh pane
             resultsPanel.setLayout(new BorderLayout());  //give your JPanel a BorderLayout
