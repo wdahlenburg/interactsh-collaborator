@@ -84,7 +84,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
                 splitPane.setBottomComponent(tableSplitPane);
 
                 JPanel panel = new JPanel();
-                JButton CollaboratorButton = new JButton("Generate Interactsh url");
+                JButton CollaboratorButton = new JButton("Generate Interactsh Url");
                 JLabel pollLabel = new JLabel("Poll Time: ");
                 pollField = new JTextField(Integer.toString(pollTime), 4);
                 pollField.getDocument().addDocumentListener(new PollTimeListener());
