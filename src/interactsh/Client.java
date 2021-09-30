@@ -120,6 +120,7 @@ public class Client {
         try {
             JSONObject deregisterData = new JSONObject();
             deregisterData.put("correlation-id", correlationId);
+            deregisterData.put("secret-key", secretKey);
 
             String request = "POST /deregister HTTP/1.1\r\n"
                     + "Host: " + host + "\r\n"
