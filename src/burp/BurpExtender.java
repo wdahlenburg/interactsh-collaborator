@@ -30,7 +30,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
     private JSplitPane splitPane;
     private JScrollPane scrollPane;
     private JSplitPane tableSplitPane;
-    private JPanel resultsPanel;
+    private static JPanel resultsPanel;
     private static JTextField pollField;
     private static Table logTable;
     public static JTextField serverText;
@@ -221,7 +221,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
     public static void clearTable(){
         callbacks.printOutput("Clearing logs");
         log.clear();
-        logTable.revalidate();
+        logTable.resetTable();
+
     }
 
     //
@@ -350,8 +351,6 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
         @Override
         public void changeSelection(int row, int col, boolean toggle, boolean extend)
         {
-            // show the log entry for the selected row
-
             // Get row index
             int logId = (Integer) this.getValueAt(row, 0);
 
@@ -366,6 +365,15 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
             tableSplitPane.revalidate();
 
             super.changeSelection(row, col, toggle, extend);
+        }
+
+        public void resetTable(){
+            resultsPanel.removeAll();
+            resultsPanel.revalidate();
+            resultsPanel.repaint();
+            tableSplitPane.revalidate();
+            this.revalidate();
+            this.repaint();
         }
     }
 }
