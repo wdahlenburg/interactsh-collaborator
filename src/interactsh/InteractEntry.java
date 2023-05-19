@@ -1,4 +1,5 @@
 package interactsh;
+
 import org.json.*;
 
 // {"protocol":"dns","unique-id":"c4jup534f3acspvifdr0cru63feyyyyyn","full-id":"c4jup534f3acspvifdr0cru63feyyyyyn","q-type":"A","raw-request":";; opcode: QUERY, status: NOERROR, id: 52297\n;; flags: cd; QUERY: 1, ANSWER: 0, AUTHORITY: 0, ADDITIONAL: 0\n\n;; QUESTION SECTION:\n;c4jup534f3acspvifdr0cru63feyyyyyn.interact.sh.\tIN\t A\n","raw-response":";; opcode: QUERY, status: NOERROR, id: 52297\n;; flags: qr aa cd; QUERY: 1, ANSWER: 1, AUTHORITY: 2, ADDITIONAL: 2\n\n;; QUESTION SECTION:\n;c4jup534f3acspvifdr0cru63feyyyyyn.interact.sh.\tIN\t A\n\n;; ANSWER SECTION:\nc4jup534f3acspvifdr0cru63feyyyyyn.interact.sh.\t3600\tIN\tA\t46.101.25.250\n\n;; AUTHORITY SECTION:\nc4jup534f3acspvifdr0cru63feyyyyyn.interact.sh.\t3600\tIN\tNS\tns1.interact.sh.\nc4jup534f3acspvifdr0cru63feyyyyyn.interact.sh.\t3600\tIN\tNS\tns2.interact.sh.\n\n;; ADDITIONAL SECTION:\nns1.interact.sh.\t3600\tIN\tA\t46.101.25.250\nns2.interact.sh.\t3600\tIN\tA\t46.101.25.250\n","remote-address":"172.253.196.66","timestamp":"2021-08-26T19:35:24.221293174Z"}
@@ -22,15 +23,27 @@ public class InteractEntry {
 
     private String processDetails(String protocol, JSONObject obj) throws JSONException {
         String result;
-        switch(protocol){
+        switch (protocol) {
             case "dns":
                 result = "Query Type: " + obj.getString("q-type") + "\n\n";
                 result += "Request: \n" + obj.getString("raw-request") + "\n";
                 result += "Response: \n" + obj.getString("raw-response") + "\n";
                 break;
+            case "ftp":
+                result = "FTP From: " + obj.getString("remote-address") + "\n\n";
+                result += "Request: \n" + obj.getString("raw-request") + "\n";
+                break;
             case "http":
                 result = "Request: \n" + obj.getString("raw-request") + "\n";
                 result += "Response: \n" + obj.getString("raw-response") + "\n";
+                break;
+            case "ldap":
+                result = "LDAP From: " + obj.getString("remote-address") + "\n\n";
+                result += "Request: \n" + obj.getString("raw-request") + "\n";
+                break;
+            case "responder":
+            case "smb":
+                result = "Request: \n" + obj.getString("raw-request") + "\n";
                 break;
             case "smtp":
                 result = "SMTP From: " + obj.getString("smtp-from") + "\n\n";
@@ -42,7 +55,7 @@ public class InteractEntry {
         return result;
     }
 
-    public String toString(){
+    public String toString() {
         return "Protocol: " + protocol + "\n"
                 + "UID: " + uid + "\n"
                 + "Address: " + address + "\n"
