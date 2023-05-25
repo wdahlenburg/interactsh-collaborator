@@ -1,95 +1,68 @@
 package burp.gui;
 
-import burp.BurpExtender;
-import burp.api.montoya.MontoyaApi;
-
-import javax.swing.*;
+import burp.api.montoya.persistence.Preferences;
 
 public class Config {
     public static void generateConfig() {
-        burp.BurpExtender.api.persistence().extensionData().deleteString("interactsh-server");
-        burp.BurpExtender.api.persistence().extensionData().setString("interactsh-server", "oast.pro");
-        burp.BurpExtender.api.persistence().extensionData().deleteString("interactsh-port");
-        burp.BurpExtender.api.persistence().extensionData().setString("interactsh-port", "443");
-        burp.BurpExtender.api.persistence().extensionData().deleteBoolean("interactsh-uses-tls");
-        burp.BurpExtender.api.persistence().extensionData().setBoolean("interactsh-uses-tls", true);
+        Preferences preferences = burp.BurpExtender.api.persistence().preferences();
+
+        String server = preferences.getString("interactsh-server");
+        String port = preferences.getString("interactsh-port");
+
+        if ((server == null || server.isEmpty()) ||
+                (port == null || port.isEmpty()) ||
+                !preferences.stringKeys().contains("interactsh-authorization") ||
+                !preferences.stringKeys().contains("interactsh-uses-tls")) {
+            preferences.setString("interactsh-server", "oast.pro");
+            preferences.setString("interactsh-port", "443");
+            preferences.setString("interactsh-authorization", "");
+            preferences.setString("interactsh-uses-tls", Boolean.toString(true));
+        }
     }
 
     public static void loadConfig() {
-        String server = burp.BurpExtender.api.persistence().extensionData().getString("interactsh-server");
-        BurpExtender.api.logging().logToOutput("Server from config is: " + server);
-        String port = burp.BurpExtender.api.persistence().extensionData().getString("interactsh-port");
-        boolean tls = true;
-        if (burp.BurpExtender.api.persistence().extensionData().getBoolean("interactsh-uses-tls") != null) {
-            tls = burp.BurpExtender.api.persistence().extensionData().getBoolean("interactsh-uses-tls");
-        }
-        String authorization = burp.BurpExtender.api.persistence().extensionData().getString("interactsh-authorization");
-
-        if ((server == null || server.isEmpty()) ||
-                (port == null || port.isEmpty())) {
-            BurpExtender.api.logging().logToOutput("Server is: " + server + "; Port is: " + port + "; Re-generating config");
-            generateConfig();
-            server = burp.BurpExtender.api.persistence().extensionData().getString("interactsh-server");
-            port = burp.BurpExtender.api.persistence().extensionData().getString("interactsh-port");
-            tls = burp.BurpExtender.api.persistence().extensionData().getBoolean("interactsh-uses-tls");
-            authorization = null;
-        }
+        Preferences preferences = burp.BurpExtender.api.persistence().preferences();
+        String server = preferences.getString("interactsh-server");
+        String port = preferences.getString("interactsh-port");
+        String tls = preferences.getString("interactsh-uses-tls");
+        String authorization = preferences.getString("interactsh-authorization");
 
         // Update each of the text boxes on the Configuration pane
-        burp.BurpExtender.setServerText(server);
-        burp.BurpExtender.setPortText(port);
-        burp.BurpExtender.setAuthText(authorization);
-        burp.BurpExtender.setTlsBox(tls);
+        burp.BurpExtender.tab.setServerText(server);
+        burp.BurpExtender.tab.setPortText(port);
+        burp.BurpExtender.tab.setAuthText(authorization);
+        burp.BurpExtender.tab.setTlsBox(Boolean.parseBoolean(tls));
     }
 
     public static void updateConfig() {
+        Preferences preferences = burp.BurpExtender.api.persistence().preferences();
+
         // Read each of the text boxes on the Configuration pane
-        String server = burp.BurpExtender.getServerText();
-        String port = burp.BurpExtender.getPortText();
-        String authorization = burp.BurpExtender.getAuthText();
-        boolean tls = burp.BurpExtender.getTlsBox();
+        String server = burp.BurpExtender.tab.getServerText();
+        String port = burp.BurpExtender.tab.getPortText();
+        String authorization = burp.BurpExtender.tab.getAuthText();
+        String tls = burp.BurpExtender.tab.getTlsBox();
 
-        BurpExtender.api.logging().logToOutput("Server is now: " + server);
-
-        burp.BurpExtender.api.persistence().extensionData().deleteString("interactsh-server");
-        burp.BurpExtender.api.persistence().extensionData().setString("interactsh-server", server);
-        burp.BurpExtender.api.persistence().extensionData().deleteString("interactsh-port");
-        burp.BurpExtender.api.persistence().extensionData().setString("interactsh-port", port);
-        burp.BurpExtender.api.persistence().extensionData().deleteString("interactsh-authorization");
-        burp.BurpExtender.api.persistence().extensionData().setString("interactsh-authorization", authorization);
-        burp.BurpExtender.api.persistence().extensionData().deleteBoolean("interactsh-uses-tls");
-        burp.BurpExtender.api.persistence().extensionData().setBoolean("interactsh-uses-tls", tls);
-
-
-        BurpExtender.api.logging().logToOutput("Server is now: " + burp.BurpExtender.api.persistence().extensionData().getString("interactsh-server"));
+        preferences.setString("interactsh-server", server);
+        preferences.setString("interactsh-port", port);
+        preferences.setString("interactsh-uses-tls", tls);
+        preferences.setString("interactsh-authorization", authorization);
     }
 
     public static String getHost() {
-        if (burp.BurpExtender.api.persistence().extensionData().getString("interactsh-server") != null) {
-            return burp.BurpExtender.api.persistence().extensionData().getString("interactsh-server");
-        }
-        return burp.BurpExtender.getServerText();
+        return burp.BurpExtender.api.persistence().preferences().getString("interactsh-server");
     }
 
     public static String getPort() {
-        if (burp.BurpExtender.api.persistence().extensionData().getString("interactsh-port") != null) {
-            return burp.BurpExtender.api.persistence().extensionData().getString("interactsh-port");
-        }
-        return burp.BurpExtender.getPortText();
+        return burp.BurpExtender.api.persistence().preferences().getString("interactsh-port");
     }
 
     public static boolean getScheme() {
-        if (burp.BurpExtender.api.persistence().extensionData().getBoolean("interactsh-uses-tls") != null) {
-            return burp.BurpExtender.api.persistence().extensionData().getBoolean("interactsh-uses-tls");
-        }
-        return burp.BurpExtender.getTlsBox();
+        return Boolean.parseBoolean(burp.BurpExtender.api.persistence().preferences().getString("interactsh-uses-tls"));
     }
 
     public static String getAuth() {
-        if (burp.BurpExtender.api.persistence().extensionData().getString("interactsh-authorization") != null) {
-            return burp.BurpExtender.api.persistence().extensionData().getString("interactsh-authorization");
-        }
-        return burp.BurpExtender.getAuthText();
+        return burp.BurpExtender.api.persistence().preferences().getString("interactsh-authorization");
     }
 }
 

@@ -22,11 +22,11 @@ import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.extension.ExtensionUnloadingHandler;
 
+
 public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, ExtensionUnloadingHandler {
     public static MontoyaApi api;
     public static int pollTime = 60;
-
-    private static InteractshTab tab;
+    public static InteractshTab tab;
     private static ArrayList<Client> clients = new ArrayList<Client>();
     private InteractshListener listener = new InteractshListener();
 
@@ -34,16 +34,14 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
     public void initialize(MontoyaApi api) {
         this.api = api;
         api.extension().setName("Interactsh Collaborator");
+        api.userInterface().registerContextMenuItemsProvider(this);
+        api.extension().registerUnloadingHandler(this);
 
         api.logging().logToOutput("Starting Interactsh Collaborator!");
 
+        burp.gui.Config.generateConfig();
         tab = new InteractshTab(api, listener, clients);
         burp.gui.Config.loadConfig();
-
-        api.extension().setName("Interactsh");
-        api.userInterface().registerContextMenuItemsProvider(this);
-
-        api.extension().registerUnloadingHandler(this);
 
         api.userInterface().registerSuiteTab("Interactsh", tab);
     }
@@ -93,39 +91,6 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
         tab.addToTable(i);
     }
 
-    public static String getServerText() {
-        return tab.serverText.getText();
-    }
-
-    public static void setServerText(String text) {
-        api.logging().logToOutput("Setting server to: " + text);
-        tab.serverText.setText(text);
-    }
-
-    public static String getPortText() {
-        return tab.portText.getText();
-    }
-
-    public static void setPortText(String text) {
-        tab.portText.setText(text);
-    }
-
-    public static String getAuthText() {
-        return tab.authText.getText();
-    }
-
-    public static void setAuthText(String text) {
-        tab.authText.setText(text);
-    }
-
-    public static boolean getTlsBox() {
-        return tab.tlsBox.isSelected();
-    }
-
-    public static void setTlsBox(boolean value) {
-        tab.tlsBox.setSelected(value);
-    }
-
     // //
     // // implement ContextMenuItemsProvider
     // //
@@ -140,7 +105,7 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
         return menuList;
     }
 
-    private class InteractshTab extends JComponent {
+    public class InteractshTab extends JComponent {
         private JTabbedPane mainPane;
         private JSplitPane splitPane;
         private JScrollPane scrollPane;
@@ -148,10 +113,10 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
         private JPanel resultsPanel;
         private JTextField pollField;
         private Table logTable;
-        public JTextField serverText;
-        public JTextField portText;
-        public JTextField authText;
-        public JCheckBox tlsBox;
+        private static JTextField serverText;
+        private static JTextField portText;
+        private static JTextField authText;
+        private static JCheckBox tlsBox;
         private List<InteractEntry> log = new ArrayList<InteractEntry>();
         private InteractshListener listener;
         private ArrayList<Client> clients;
@@ -237,6 +202,38 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
                     6, 6);       //xPad, yPad
 
             add(mainPane);
+        }
+
+        public static String getServerText() {
+            return serverText.getText();
+        }
+
+        public static void setServerText(String t) {
+            serverText.setText(t);
+        }
+
+        public static String getPortText() {
+            return portText.getText();
+        }
+
+        public static void setPortText(String text) {
+            portText.setText(text);
+        }
+
+        public static String getAuthText() {
+            return authText.getText();
+        }
+
+        public static void setAuthText(String text) {
+            authText.setText(text);
+        }
+
+        public static String getTlsBox() {
+            return Boolean.toString(tlsBox.isSelected());
+        }
+
+        public static void setTlsBox(boolean value) {
+            tlsBox.setSelected(value);
         }
 
         public JTextField getPollField() {

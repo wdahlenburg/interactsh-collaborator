@@ -203,8 +203,6 @@ public class Client {
         return new String(decrypted);
     }
 
-    ;
-
     private String[] splitStringEveryN(String s, int interval) {
         int arrayLength = (int) Math.ceil(((s.length() / (double) interval)));
         String[] result = new String[arrayLength];
