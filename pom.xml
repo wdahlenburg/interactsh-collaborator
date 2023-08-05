@@ -5,16 +5,15 @@
 
     <groupId>interactsh</groupId>
     <artifactId>collaborator</artifactId>
-    <version>1.0.1-dev</version>
+    <version>1.0.2-dev</version>
     <packaging>jar</packaging>
 
     <dependencies>
         <!-- Burp API -->
         <dependency>
-            <groupId>net.portswigger.burp.extender</groupId>
-            <artifactId>burp-extender-api</artifactId>
-            <version>2.2</version>
-            <scope>provided</scope>
+            <groupId>net.portswigger.burp.extensions</groupId>
+            <artifactId>montoya-api</artifactId>
+            <version>LATEST</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
@@ -63,7 +62,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
     </properties>
 </project>

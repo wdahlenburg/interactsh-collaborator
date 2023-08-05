@@ -1,13 +1,16 @@
 package interactsh;
 
-import burp.IBurpExtenderCallbacks;
-import burp.BurpExtender;
-import burp.IResponseInfo;
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
+import burp.api.montoya.http.HttpService;
+
 import javax.crypto.*;
 import javax.crypto.spec.*;
+
 import com.github.shamil.Xid;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.spec.MGF1ParameterSpec;
@@ -17,26 +20,24 @@ import java.util.*;
 public class Client {
     public PrivateKey privateKey;
     private PublicKey publicKey;
-    private IBurpExtenderCallbacks callbacks = BurpExtender.getCallbacks();
     private Xid xid;
     private String secretKey;
     private String correlationId;
 
     // Defaults
-    private String server = "https://interact.sh";
-    private String host = "interact.sh";
+    private String host = "oast.pro";
     private int port = 443;
     private boolean scheme = true;
     private String authorization = null;
 
-    public Client(){
-        server = burp.gui.Config.getUrl();
+    public Client() {
         host = burp.gui.Config.getHost();
         scheme = burp.gui.Config.getScheme();
         authorization = burp.gui.Config.getAuth();
         try {
             port = Integer.parseInt(burp.gui.Config.getPort());
-        } catch (NumberFormatException ne){
+
+        } catch (NumberFormatException ne) {
             port = 443;
         }
     }
@@ -58,19 +59,20 @@ public class Client {
                     + "User-Agent: Interact.sh Client\r\n"
                     + "Content-Type: application/json\r\n"
                     + "Content-Length: " + registerData.toString().length() + "\r\n";
-            if(!(authorization == null || authorization.isEmpty())){
+            if (!(authorization == null || authorization.isEmpty())) {
                 request += "Authorization: " + authorization + "\r\n";
             }
             request += "Connection: close\r\n\r\n"
                     + registerData.toString();
 
-            byte[] response = callbacks.makeHttpRequest(host, port, scheme, request.getBytes(StandardCharsets.UTF_8));
-            IResponseInfo responseInfo = BurpExtender.getHelpers().analyzeResponse(response);
-            if (responseInfo.getStatusCode() == 200) {
+            HttpRequest httpRequest = HttpRequest.httpRequest(HttpService.httpService(host, port, scheme), request);
+            HttpResponse resp = burp.BurpExtender.api.http().sendRequest(httpRequest).response();
+
+            if (resp.statusCode() == 200) {
                 return true;
             }
-        }catch (Exception ex){
-            callbacks.printOutput(ex.getMessage());
+        } catch (Exception ex) {
+            burp.BurpExtender.api.logging().logToError(ex.getMessage());
         }
         return false;
     }
@@ -79,67 +81,69 @@ public class Client {
         String request = "GET /poll?id=" + correlationId + "&secret=" + secretKey + " HTTP/1.1\r\n"
                 + "Host: " + host + "\r\n"
                 + "User-Agent: Interact.sh Client\r\n";
-        if(!(authorization == null || authorization.isEmpty())){
+        if (!(authorization == null || authorization.isEmpty())) {
             request += "Authorization: " + authorization + "\r\n";
         }
         request += "Connection: close\r\n\r\n";
 
-        byte[] response = callbacks.makeHttpRequest(host, port, scheme, request.getBytes(StandardCharsets.UTF_8));
-        IResponseInfo responseInfo = BurpExtender.getHelpers().analyzeResponse(response);
-        if (responseInfo.getStatusCode() != 200) {
-            callbacks.printOutput("Poll for " + correlationId + " was unsuccessful: " + responseInfo.getStatusCode());
+        HttpRequest httpRequest = HttpRequest.httpRequest(HttpService.httpService(host, port, scheme), request);
+        HttpResponse resp = burp.BurpExtender.api.http().sendRequest(httpRequest).response();
+        if (resp.statusCode() != 200) {
+            burp.BurpExtender.api.logging().logToOutput("Poll for " + correlationId + " was unsuccessful: " + resp.statusCode());
             return false;
         }
 
-        String responseStr = new String(response);
-        String responseBody = responseStr.split("\r\n\r\n")[1];
+        String responseBody = resp.bodyToString();
         try {
             JSONObject jsonObject = new JSONObject(responseBody);
             String aesKey = jsonObject.getString("aes_key");
             String key = decryptAesKey(aesKey);
 
-            JSONArray data = jsonObject.getJSONArray("data");
-            for (int i = 0; i < data.length(); i++){
-                String d = data.getString(i);
+            if (!jsonObject.isNull("data")) {
+                JSONArray data = jsonObject.getJSONArray("data");
+                for (int i = 0; i < data.length(); i++) {
+                    String d = data.getString(i);
 
-                String decryptedData = decryptData(d, key);
+                    String decryptedData = decryptData(d, key);
 
-                InteractEntry entry = new InteractEntry(decryptedData);
-                burp.BurpExtender.addToTable(entry);
-                callbacks.printOutput(entry.toString());
+                    InteractEntry entry = new InteractEntry(decryptedData);
+                    burp.BurpExtender.addToTable(entry);
+                    burp.BurpExtender.api.logging().logToOutput(entry.toString());
+                }
             }
-
-        } catch(Exception ex){
-            callbacks.printOutput(ex.getMessage());
+        } catch (Exception ex) {
+            burp.BurpExtender.api.logging().logToError(ex.getMessage());
         }
         return true;
     }
 
-    public void deregister(){
-        callbacks.printOutput("Deregistering " + correlationId);
+    public void deregister() {
+        burp.BurpExtender.api.logging().logToOutput("Deregistering " + correlationId);
         try {
             JSONObject deregisterData = new JSONObject();
             deregisterData.put("correlation-id", correlationId);
+            deregisterData.put("secret-key", secretKey);
 
             String request = "POST /deregister HTTP/1.1\r\n"
                     + "Host: " + host + "\r\n"
                     + "User-Agent: Interact.sh Client\r\n"
                     + "Content-Type: application/json\r\n"
                     + "Content-Length: " + deregisterData.toString().length() + "\r\n";
-            if(!(authorization == null || authorization.isEmpty())){
+            if (!(authorization == null || authorization.isEmpty())) {
                 request += "Authorization: " + authorization + "\r\n";
             }
             request += "Connection: close\r\n\r\n"
                     + deregisterData.toString();
 
-            callbacks.makeHttpRequest(host, port, scheme, request.getBytes(StandardCharsets.UTF_8));
-        }catch (Exception ex){
-            callbacks.printOutput(ex.getMessage());
+            HttpRequest httpRequest = HttpRequest.httpRequest(HttpService.httpService(host, port, scheme), request);
+            burp.BurpExtender.api.http().sendRequest(httpRequest).response();
+        } catch (Exception ex) {
+            burp.BurpExtender.api.logging().logToError(ex.getMessage());
         }
     }
 
-    public String getInteractDomain(){
-        if (correlationId == null || correlationId.isEmpty()){
+    public String getInteractDomain() {
+        if (correlationId == null || correlationId.isEmpty()) {
             return "";
         } else {
             String fullDomain = correlationId;
@@ -147,7 +151,7 @@ public class Client {
             // Fix the string up to 33 characters
             Random random = new Random();
             while (fullDomain.length() < 33) {
-                fullDomain += (char)(random.nextInt(26) + 'a');
+                fullDomain += (char) (random.nextInt(26) + 'a');
             }
             fullDomain += "." + host;
             return fullDomain;
@@ -163,18 +167,17 @@ public class Client {
         privateKey = kp.getPrivate();
     }
 
-    private String getPublicKey(){
+    private String getPublicKey() {
         String pubKey = "-----BEGIN PUBLIC KEY-----\n";
-        String [] chunks = splitStringEveryN(Base64.getEncoder().encodeToString(publicKey.getEncoded()), 64);
-        for (String chunk: chunks) {
+        String[] chunks = splitStringEveryN(Base64.getEncoder().encodeToString(publicKey.getEncoded()), 64);
+        for (String chunk : chunks) {
             pubKey += chunk + "\n";
         }
         pubKey += "-----END PUBLIC KEY-----\n";
         return pubKey;
     }
 
-    private String decryptAesKey(String encrypted) throws Exception
-    {
+    private String decryptAesKey(String encrypted) throws Exception {
         byte[] cipherTextArray = Base64.getDecoder().decode(encrypted);
 
         Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
@@ -198,10 +201,10 @@ public class Client {
         byte[] decrypted = cipher.doFinal(cipherText);
 
         return new String(decrypted);
-    };
+    }
 
     private String[] splitStringEveryN(String s, int interval) {
-        int arrayLength = (int) Math.ceil(((s.length() / (double)interval)));
+        int arrayLength = (int) Math.ceil(((s.length() / (double) interval)));
         String[] result = new String[arrayLength];
 
         int j = 0;
