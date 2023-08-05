@@ -91,9 +91,9 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
         tab.addToTable(i);
     }
 
-    // //
-    // // implement ContextMenuItemsProvider
-    // //
+    //
+    // implement ContextMenuItemsProvider
+    //
 
     @Override
     public List<Component> provideMenuItems(ContextMenuEvent event) {
@@ -153,12 +153,15 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
             splitPane.setTopComponent(panel);
 
             // Configuration pane
-            JPanel configPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            JPanel configPanel = new JPanel();
+            configPanel.setLayout(new BoxLayout(configPanel, BoxLayout.Y_AXIS));
+            JPanel subConfigPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             mainPane.addTab("Configuration", configPanel);
+            configPanel.add(subConfigPanel);
             JPanel innerConfig = new JPanel();
-            innerConfig.setSize(new Dimension(80, 150));
+            subConfigPanel.setMaximumSize(new Dimension(configPanel.getMaximumSize().width, 150));
             innerConfig.setLayout(new SpringLayout());
-            configPanel.add(innerConfig);
+            subConfigPanel.add(innerConfig);
 
             serverText = new JTextField("oast.pro", 20);
             portText = new JTextField("443", 20);
@@ -200,6 +203,12 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
                     5, 2, //rows, cols
                     6, 6,        //initX, initY
                     6, 6);       //xPad, yPad
+
+            JPanel documentationPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            JLabel help = new JLabel("Check out https://github.com/projectdiscovery/interactsh for an up to date list of public Interactsh servers", SwingConstants.LEFT);
+            documentationPanel.setAlignmentY(Component.TOP_ALIGNMENT);
+            documentationPanel.add(help);
+            configPanel.add(documentationPanel);
 
             add(mainPane);
         }
@@ -245,9 +254,9 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
             logTable.revalidate();
         }
 
-        // //
-        // // extend JTable to handle cell selection
-        // //
+        //
+        // extend JTable to handle cell selection
+        //
 
         private class Table extends JTable {
             public TableModel tableModel;
@@ -274,9 +283,9 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
             }
         }
 
-        // //
-        // // implement AbstractTableModel
-        // //
+        //
+        // implement AbstractTableModel
+        //
 
         private class LogTable extends AbstractTableModel {
 
