@@ -1,6 +1,5 @@
 package burp.gui;
 
-import burp.BurpExtender.InteractshTab;
 import burp.api.montoya.persistence.Preferences;
 
 public class Config {
