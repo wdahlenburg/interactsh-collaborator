@@ -46,11 +46,12 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
             // Get all threads and stop them.
             listener.running = false;
             listener.pollNowAll();
-            
+
             try {
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
             }
+            
             listener.cleanup();
         }
         api.logging().logToOutput("Thanks for collaborating!");
