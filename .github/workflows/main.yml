@@ -12,12 +12,14 @@ jobs:
     runs-on: "ubuntu-latest"
 
     steps:
-      # ...
-      - name: "Build & test"
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+      - name: Build
         run: |
           mvn package
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Upload Release
+        uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
