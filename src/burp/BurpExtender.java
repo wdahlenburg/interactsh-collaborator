@@ -1,38 +1,53 @@
 package burp;
 
-import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
-import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
-import burp.listeners.InteractshListener;
-import burp.listeners.PollTimeListener;
-import interactsh.Client;
-import interactsh.InteractEntry;
-import layout.SpringUtilities;
-
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.swing.*;
+
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SpringLayout;
+import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.extension.ExtensionUnloadingHandler;
-
+import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
+import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
+import burp.gui.Config;
+import burp.listeners.InteractshListener;
+import burp.listeners.PollTimeListener;
+import interactsh.InteractEntry;
+import layout.SpringUtilities;
 
 public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, ExtensionUnloadingHandler {
     public static MontoyaApi api;
     public static int pollTime = 60;
     public static InteractshTab tab;
-    private static ArrayList<Client> clients = new ArrayList<Client>();
-    private InteractshListener listener = new InteractshListener();
+    private InteractshListener listener;
 
     @Override
     public void initialize(MontoyaApi api) {
         this.api = api;
+        this.listener = new InteractshListener();
+
         api.extension().setName("Interactsh Collaborator");
         api.userInterface().registerContextMenuItemsProvider(this);
         api.extension().registerUnloadingHandler(this);
@@ -40,7 +55,7 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
         api.logging().logToOutput("Starting Interactsh Collaborator!");
 
         burp.gui.Config.generateConfig();
-        tab = new InteractshTab(api, listener, clients);
+        tab = new InteractshTab(api, listener);
         burp.gui.Config.loadConfig();
 
         api.userInterface().registerSuiteTab("Interactsh", tab);
@@ -55,24 +70,11 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
             }
-            for (int i = 0; i < listener.pollers.size(); i++) {
-                listener.pollers.get(i).interrupt();
-            }
 
-            // Tell all clients to deregister
-            for (int i = 0; i < clients.size(); i++) {
-                clients.get(i).deregister();
-            }
+            listener.pollNowAll();
+            listener.cleanup();
         }
         api.logging().logToOutput("Thanks for collaborating!");
-    }
-
-    public ArrayList<Client> getClients() {
-        return clients;
-    }
-
-    public static void addClient(Client c) {
-        clients.add(c);
     }
 
     public static int getPollTime() {
@@ -99,7 +101,7 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
     public List<Component> provideMenuItems(ContextMenuEvent event) {
         List<Component> menuList = new ArrayList<Component>();
         JMenuItem item = new JMenuItem("Generate Interactsh url");
-        item.addActionListener(new InteractshListener());
+        item.addActionListener(e -> listener.generateCollaborator());
         menuList.add(item);
 
         return menuList;
@@ -116,14 +118,13 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
         private static JTextField serverText;
         private static JTextField portText;
         private static JTextField authText;
+        private static JTextField pollText;
         private static JCheckBox tlsBox;
         private List<InteractEntry> log = new ArrayList<InteractEntry>();
         private InteractshListener listener;
-        private ArrayList<Client> clients;
 
-        public InteractshTab(MontoyaApi api, InteractshListener listener, ArrayList<Client> clients) {
+        public InteractshTab(MontoyaApi api, InteractshListener listener) {
             this.listener = listener;
-            this.clients = clients;
 
             setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 
@@ -142,14 +143,18 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
 
             JPanel panel = new JPanel();
             JButton CollaboratorButton = new JButton("Generate Interactsh url");
+            JButton RefreshButton = new JButton("Refresh");
+
             JLabel pollLabel = new JLabel("Poll Time: ");
-            pollField = new JTextField("60", 4);
+            pollField = new JTextField(Config.getPollInterval(), 4);
             pollField.getDocument().addDocumentListener(new PollTimeListener());
 
-            CollaboratorButton.addActionListener(listener);
+            CollaboratorButton.addActionListener(e -> this.listener.generateCollaborator());
+            RefreshButton.addActionListener(e -> listener.pollNowAll());
             panel.add(CollaboratorButton);
             panel.add(pollLabel);
             panel.add(pollField);
+            panel.add(RefreshButton);
             splitPane.setTopComponent(panel);
 
             // Configuration pane
@@ -159,13 +164,14 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
             mainPane.addTab("Configuration", configPanel);
             configPanel.add(subConfigPanel);
             JPanel innerConfig = new JPanel();
-            subConfigPanel.setMaximumSize(new Dimension(configPanel.getMaximumSize().width, 150));
+            subConfigPanel.setMaximumSize(new Dimension(configPanel.getMaximumSize().width, 250));
             innerConfig.setLayout(new SpringLayout());
             subConfigPanel.add(innerConfig);
 
             serverText = new JTextField("oast.pro", 20);
             portText = new JTextField("443", 20);
             authText = new JTextField("", 20);
+            pollText = new JTextField("60", 20);
             tlsBox = new JCheckBox("", true);
 
             JLabel server = new JLabel("Server: ");
@@ -183,29 +189,32 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
             auth.setLabelFor(authText);
             innerConfig.add(authText);
 
+            JLabel poll = new JLabel("Poll Interval (sec): ");
+            innerConfig.add(poll);
+            poll.setLabelFor(pollText);
+            innerConfig.add(pollText);
+
             JLabel tls = new JLabel("TLS: ");
             innerConfig.add(tls);
             tls.setLabelFor(tlsBox);
             innerConfig.add(tlsBox);
 
             JButton updateConfigButton = new JButton("Update Settings");
-            updateConfigButton.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    burp.gui.Config.updateConfig();
-                }
-            });
+            updateConfigButton.addActionListener(e -> burp.gui.Config.updateConfig());
             innerConfig.add(updateConfigButton);
 
             // Add a blank panel so that SpringUtilities can make a well shaped grid
             innerConfig.add(new JPanel());
 
             SpringUtilities.makeCompactGrid(innerConfig,
-                    5, 2, //rows, cols
-                    6, 6,        //initX, initY
-                    6, 6);       //xPad, yPad
+                    6, 2, // rows, cols
+                    6, 6, // initX, initY
+                    6, 6); // xPad, yPad
 
             JPanel documentationPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-            JLabel help = new JLabel("Check out https://github.com/projectdiscovery/interactsh for an up to date list of public Interactsh servers", SwingConstants.LEFT);
+            JLabel help = new JLabel(
+                    "Check out https://github.com/projectdiscovery/interactsh for an up to date list of public Interactsh servers",
+                    SwingConstants.LEFT);
             documentationPanel.setAlignmentY(Component.TOP_ALIGNMENT);
             documentationPanel.add(help);
             configPanel.add(documentationPanel);
@@ -233,8 +242,16 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
             return authText.getText();
         }
 
+        public static String getPollText() {
+            return pollText.getText();
+        }
+
         public static void setAuthText(String text) {
             authText.setText(text);
+        }
+
+        public static void setPollText(String text) {
+            pollText.setText(text);
         }
 
         public static String getTlsBox() {
@@ -272,11 +289,11 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
                 InteractEntry ie = log.get(row);
 
                 resultsPanel.removeAll(); // Refresh pane
-                resultsPanel.setLayout(new BorderLayout());  //give your JPanel a BorderLayout
+                resultsPanel.setLayout(new BorderLayout()); // give your JPanel a BorderLayout
 
                 JTextArea text = new JTextArea(ie.details);
-                JScrollPane scroll = new JScrollPane(text); //place the JTextArea in a scroll pane
-                resultsPanel.add(scroll, BorderLayout.CENTER); //add the JScrollPane to the panel
+                JScrollPane scroll = new JScrollPane(text); // place the JTextArea in a scroll pane
+                resultsPanel.add(scroll, BorderLayout.CENTER); // add the JScrollPane to the panel
                 tableSplitPane.revalidate();
 
                 super.changeSelection(row, col, toggle, extend);
