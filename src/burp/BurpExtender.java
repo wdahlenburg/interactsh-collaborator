@@ -276,11 +276,9 @@ public class BurpExtender implements BurpExtension, ContextMenuItemsProvider, Ex
         //
 
         private class Table extends JTable {
-            public TableModel tableModel;
 
             public Table(TableModel tableModel) {
                 super(tableModel);
-                this.tableModel = tableModel;
             }
 
             @Override
