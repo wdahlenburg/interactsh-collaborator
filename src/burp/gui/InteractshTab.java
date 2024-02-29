@@ -31,8 +31,8 @@ public class InteractshTab extends JComponent {
     private ArrayList<InteractEntry> log = new ArrayList<InteractEntry>();
     private InteractshListener listener;
 
-    public InteractshTab(MontoyaApi api, InteractshListener listener) {
-        this.listener = listener;
+    public InteractshTab(MontoyaApi api) {
+        this.listener = new InteractshListener();
 
         setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 
@@ -60,7 +60,7 @@ public class InteractshTab extends JComponent {
         pollField.getDocument().addDocumentListener(new PollTimeListener());
 
         CollaboratorButton.addActionListener(e -> this.listener.generateCollaborator());
-        RefreshButton.addActionListener(e -> listener.pollNowAll());
+        RefreshButton.addActionListener(e -> this.listener.pollNowAll());
         panel.add(CollaboratorButton);
         panel.add(pollLabel);
         panel.add(pollField);
@@ -110,7 +110,12 @@ public class InteractshTab extends JComponent {
         innerConfig.add(tlsBox);
 
         JButton updateConfigButton = new JButton("Update Settings");
-        updateConfigButton.addActionListener(e -> burp.gui.Config.updateConfig());
+        updateConfigButton.addActionListener(e -> {
+            burp.gui.Config.updateConfig();
+            // Re generate client listener and register again
+            listener.close();
+            this.listener = new InteractshListener();
+        });
         innerConfig.add(updateConfigButton);
 
         // Add a blank panel so that SpringUtilities can make a well shaped grid
@@ -130,6 +135,10 @@ public class InteractshTab extends JComponent {
         configPanel.add(documentationPanel);
 
         add(mainPane);
+    }
+
+    public InteractshListener getListener() {
+        return this.listener;
     }
 
     public static String getServerText() {
@@ -262,5 +271,8 @@ public class InteractshTab extends JComponent {
             }
         }
     }
-}
 
+    public void cleanup() {
+        listener.close();
+    }
+}

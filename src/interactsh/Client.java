@@ -36,12 +36,14 @@ public class Client {
     private String host = "oast.pro";
     private int port = 443;
     private boolean scheme = true;
+    private boolean is_registered = false;
     private String authorization = null;
     private String pubKey;
     private String correlationId;
 
-    public Client() throws NoSuchAlgorithmException {
+    public Client() {
         this.generateKeys();
+
         this.correlationId = Xid.get().toString();
 
         host = burp.gui.Config.getHost();
@@ -56,7 +58,12 @@ public class Client {
         }
     }
 
+    public boolean isRegistered(){
+        return this.is_registered;
+    }
+
     public boolean register() {
+        burp.BurpExtender.api.logging().logToOutput("Registering " + correlationId);
         try {
             JSONObject registerData = new JSONObject();
             registerData.put("public-key", pubKey);
@@ -78,6 +85,7 @@ public class Client {
             HttpResponse resp = burp.BurpExtender.api.http().sendRequest(httpRequest).response();
 
             if (resp.statusCode() == 200) {
+                this.is_registered = true;
                 return true;
             } else {
                 burp.BurpExtender.api.logging().logToError("Register correlation " + correlationId
@@ -172,13 +180,19 @@ public class Client {
         }
     }
 
-    public void generateKeys() throws NoSuchAlgorithmException {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-        kpg.initialize(2048);
-        KeyPair kp = kpg.generateKeyPair();
-
-        publicKey = kp.getPublic();
-        privateKey = kp.getPrivate();
+    public void generateKeys(){
+        KeyPairGenerator kpg;
+        try {
+            kpg = KeyPairGenerator.getInstance("RSA");
+            kpg.initialize(2048);
+            KeyPair kp = kpg.generateKeyPair();
+    
+            publicKey = kp.getPublic();
+            privateKey = kp.getPrivate();
+        } catch (NoSuchAlgorithmException e) {
+            burp.BurpExtender.api.logging().logToError("Unable to generate client key pair");
+            burp.BurpExtender.api.logging().logToError(e);
+        }
     }
 
     private String getPublicKey() {
